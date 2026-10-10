@@ -1573,7 +1573,114 @@ if "analysis_data" in globals() and "forward_48" in globals():
         "they caused the market movement."
     )
 
+# ============================================================
+# FREE SMART ANALYSIS ASSISTANT
+# ============================================================
 
+st.divider()
+
+st.subheader("🤖 Smart Analysis Assistant")
+
+st.caption(
+    "Automatic interpretation of the selected historical data. "
+    "No paid AI or API is used."
+)
+if (
+    "combination_summary" in globals()
+    and not combination_summary.empty
+):
+
+    st.markdown("### 📌 Combination Insight")
+
+    valid_combinations = combination_summary.dropna(
+        subset=["Bullish %"]
+    )
+
+    if not valid_combinations.empty:
+
+        strongest_bullish = valid_combinations.loc[
+            valid_combinations["Bullish %"].idxmax()
+        ]
+
+        strongest_bearish = valid_combinations.loc[
+            valid_combinations["Bearish %"].idxmax()
+        ]
+
+        st.write(
+            f"📈 **Strongest historical bullish combination:** "
+            f"{strongest_bullish['Combination']} — "
+            f"{strongest_bullish['Bullish %']:.2f}% bullish "
+            f"from {int(strongest_bullish['Dates'])} qualifying dates."
+        )
+
+        st.write(
+            f"📉 **Strongest historical bearish combination:** "
+            f"{strongest_bearish['Combination']} — "
+            f"{strongest_bearish['Bearish %']:.2f}% bearish "
+            f"from {int(strongest_bearish['Dates'])} qualifying dates."
+        )
+if (
+    "forward_summary_app" in globals()
+    and not forward_summary_app.empty
+):
+
+    st.markdown("### 📊 Forward Performance Insight")
+
+    valid_forward = forward_summary_app.dropna(
+        subset=["Average Return %"]
+    )
+
+    if not valid_forward.empty:
+
+        best_period = valid_forward.loc[
+            valid_forward["Average Return %"].idxmax()
+        ]
+
+        worst_period = valid_forward.loc[
+            valid_forward["Average Return %"].idxmin()
+        ]
+
+        st.write(
+            f"🚀 **Best historical average forward performance:** "
+            f"{best_period['Period']} — "
+            f"{best_period['Average Return %']:+.3f}% average return, "
+            f"with {best_period['Positive %']:.1f}% positive observations."
+        )
+
+        st.write(
+            f"⚠️ **Weakest historical average forward performance:** "
+            f"{worst_period['Period']} — "
+            f"{worst_period['Average Return %']:+.3f}% average return."
+        )
+if (
+    "combination_summary" in globals()
+    and not combination_summary.empty
+):
+    st.markdown("### 🧪 Reliability Check")
+
+    low_sample = combination_summary[
+        combination_summary["Dates"] < 10
+    ]
+
+    if not low_sample.empty:
+
+        combinations = ", ".join(
+            low_sample["Combination"].astype(str).tolist()
+        )
+
+        st.warning(
+            f"Small sample warning: {combinations} "
+            f"has fewer than 10 qualifying dates in the selected period. "
+            f"Percentages based on small samples can change significantly "
+            f"when new observations are added."
+        )
+
+    else:
+
+        st.success(
+            "All four exact combinations have at least 10 historical "
+            "observations in the selected period."
+        )
 # ============================================================
 # EXCEL REPORT DOWNLOAD
 # ============================================================
