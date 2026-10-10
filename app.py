@@ -1501,14 +1501,14 @@ if "analysis_data" in globals() and "forward_48" in globals():
             "in the selected history."
         )
 
-    st.markdown(
-      # ========================================================
+    # ========================================================
     # EXACT COMBINATION COMPARISON CHART
     # ========================================================
 
-  
+    st.markdown(
+        "### Exact 4/8 Combinations — Same-Day Direction"
+    )
     combination_chart_rows = []
-
     for day_num, full_date_num in [
         (4, 4),
         (4, 8),
@@ -1855,8 +1855,7 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
                 index=False
             )
 
-
-                        combination_excel.to_excel(
+            combination_excel.to_excel(
                 writer,
                 sheet_name="Exact Combinations",
                 index=False
@@ -2035,9 +2034,7 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
 
     )
 
-
-        st.caption(
+    st.caption(
         "The Excel report contains Summary, Qualifying Dates, "
         "Forward Performance, Exact Combinations and Method sheets."
-    )
     )
