@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -664,112 +663,39 @@ if "market_data" in globals() and not market_data.empty:
         "No Change",
         no_change_count
     )
-
-
     # ========================================================
-    # FAMILY ANALYSIS
+    # EXACT 4/8 COMBINATION ANALYSIS
     # ========================================================
 
-    st.markdown(
-        "### 4 Family vs 8 Family"
-    )
+    st.markdown("### Exact 4/8 Combination Analysis")
 
+    combination_rows = []
 
-    family_rows = []
+    for day_num, full_date_num in [(4, 4), (4, 8), (8, 4), (8, 8)]:
 
-
-    for family in [
-        "4 Family",
-        "8 Family"
-    ]:
-
-        family_data = special_dates[
-            special_dates["Family"] == family
+        combo_data = special_dates[
+            (special_dates["Day Number"] == day_num) &
+            (special_dates["Full Date Number"] == full_date_num)
         ]
 
+        total = len(combo_data)
+        bullish = combo_data["Direction"].eq("Bullish").sum()
+        bearish = combo_data["Direction"].eq("Bearish").sum()
+        directional = bullish + bearish
 
-        family_total = len(
-            family_data
-        )
-
-
-        family_bullish = (
-            family_data["Direction"]
-            .eq("Bullish")
-            .sum()
-        )
-
-
-        family_bearish = (
-            family_data["Direction"]
-            .eq("Bearish")
-            .sum()
-        )
-
-
-        family_directional = (
-            family_bullish
-            +
-            family_bearish
-        )
-
-
-        if family_directional > 0:
-
-            family_bullish_pct = (
-                family_bullish
-                /
-                family_directional
-                *
-                100
-            )
-
-
-            family_bearish_pct = (
-                family_bearish
-                /
-                family_directional
-                *
-                100
-            )
-
-
-        else:
-
-            family_bullish_pct = np.nan
-            family_bearish_pct = np.nan
-
-
-        family_rows.append({
-
-            "Family":
-                family,
-
-            "Dates":
-                family_total,
-
-            "Bullish":
-                family_bullish,
-
-            "Bearish":
-                family_bearish,
-
-            "Bullish %":
-                family_bullish_pct,
-
-            "Bearish %":
-                family_bearish_pct
-
+        combination_rows.append({
+            "Combination": f"{day_num} & {full_date_num}",
+            "Dates": total,
+            "Bullish": bullish,
+            "Bearish": bearish,
+            "Bullish %": bullish / directional * 100 if directional else np.nan,
+            "Bearish %": bearish / directional * 100 if directional else np.nan
         })
 
-
-    family_summary = pd.DataFrame(
-        family_rows
-    )
-
+    combination_summary = pd.DataFrame(combination_rows)
 
     st.dataframe(
-        family_summary.style.format({
+        combination_summary.style.format({
             "Bullish %": "{:.2f}%",
             "Bearish %": "{:.2f}%"
         }),
@@ -777,6 +703,7 @@ if "market_data" in globals() and not market_data.empty:
         hide_index=True
     )
 
+   
 
     # ========================================================
     # QUALIFYING DATE TABLE
@@ -1575,79 +1502,56 @@ if "analysis_data" in globals() and "forward_48" in globals():
         )
 
 
-    # ========================================================
-    # SIMPLE FAMILY COMPARISON CHART
+    
+
+    st.markdown(
+      # ========================================================
+    # EXACT COMBINATION COMPARISON CHART
     # ========================================================
 
     st.markdown(
-        "### 4 Family vs 8 Family — Same-Day Direction"
+        "### Exact 4/8 Combinations — Same-Day Direction"
     )
 
+    combination_chart_rows = []
 
-    family_chart_rows = []
-
-
-    for family in [
-        "4 Family",
-        "8 Family"
+    for day_num, full_date_num in [
+        (4, 4),
+        (4, 8),
+        (8, 4),
+        (8, 8)
     ]:
 
         temp = chart_48[
-            chart_48["Family"] == family
+            (chart_48["Day Number"] == day_num)
+            &
+            (chart_48["Full Date Number"] == full_date_num)
         ]
 
+        bullish = temp["Direction"].eq("Bullish").sum()
+        bearish = temp["Direction"].eq("Bearish").sum()
 
-        bullish = (
-            temp["Direction"]
-            .eq("Bullish")
-            .sum()
-        )
-
-
-        bearish = (
-            temp["Direction"]
-            .eq("Bearish")
-            .sum()
-        )
-
-
-        total_directional = (
-            bullish
-            +
-            bearish
-        )
-
+        total_directional = bullish + bearish
 
         if total_directional > 0:
 
             bullish_pct = (
-                bullish
-                /
-                total_directional
-                *
-                100
+                bullish / total_directional * 100
             )
-
 
             bearish_pct = (
-                bearish
-                /
-                total_directional
-                *
-                100
+                bearish / total_directional * 100
             )
-
 
         else:
 
             bullish_pct = 0
             bearish_pct = 0
 
+        combination_chart_rows.append({
 
-        family_chart_rows.append({
-
-            "Family":
-                family,
+            "Combination":
+                f"{day_num} & {full_date_num}",
 
             "Bullish %":
                 bullish_pct,
@@ -1657,20 +1561,14 @@ if "analysis_data" in globals() and "forward_48" in globals():
 
         })
 
-
-    family_chart_app = (
-        pd.DataFrame(
-            family_chart_rows
-        )
-        .set_index("Family")
+    combination_chart_app = (
+        pd.DataFrame(combination_chart_rows)
+        .set_index("Combination")
     )
-
 
     st.bar_chart(
-        family_chart_app
+        combination_chart_app
     )
-
-
     # ========================================================
     # NOTE
     # ========================================================
@@ -1787,21 +1685,26 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
         # FAMILY SUMMARY
         # ----------------------------------------------------
 
-        family_excel_rows = []
+                # ----------------------------------------------------
+        # EXACT COMBINATION SUMMARY
+        # ----------------------------------------------------
 
+        combination_excel_rows = []
 
-        for family in [
-            "4 Family",
-            "8 Family"
+        for day_num, full_date_num in [
+            (4, 4),
+            (4, 8),
+            (8, 4),
+            (8, 8)
         ]:
 
             temp = forward_48[
-                forward_48["Family"] == family
+                (forward_48["Day Number"] == day_num)
+                &
+                (forward_48["Full Date Number"] == full_date_num)
             ]
 
-
             total = len(temp)
-
 
             bullish = (
                 temp["Direction"]
@@ -1809,38 +1712,22 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
                 .sum()
             )
 
-
             bearish = (
                 temp["Direction"]
                 .eq("Bearish")
                 .sum()
             )
 
-
-            directional = (
-                bullish
-                +
-                bearish
-            )
-
+            directional = bullish + bearish
 
             if directional > 0:
 
                 bullish_pct = (
-                    bullish
-                    /
-                    directional
-                    *
-                    100
+                    bullish / directional * 100
                 )
 
-
                 bearish_pct = (
-                    bearish
-                    /
-                    directional
-                    *
-                    100
+                    bearish / directional * 100
                 )
 
             else:
@@ -1848,11 +1735,10 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
                 bullish_pct = np.nan
                 bearish_pct = np.nan
 
+            combination_excel_rows.append({
 
-            family_excel_rows.append({
-
-                "Family":
-                    family,
+                "Combination":
+                    f"{day_num} & {full_date_num}",
 
                 "Qualifying Dates":
                     total,
@@ -1871,11 +1757,9 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
 
             })
 
-
-        family_excel = pd.DataFrame(
-            family_excel_rows
+        combination_excel = pd.DataFrame(
+            combination_excel_rows
         )
-
 
         # ----------------------------------------------------
         # INFORMATION SHEET
@@ -1978,9 +1862,9 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
             )
 
 
-            family_excel.to_excel(
+                        combination_excel.to_excel(
                 writer,
-                sheet_name="Family Analysis",
+                sheet_name="Exact Combinations",
                 index=False
             )
 
@@ -2158,7 +2042,8 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
     )
 
 
-    st.caption(
+        st.caption(
         "The Excel report contains Summary, Qualifying Dates, "
-        "Forward Performance, Family Analysis and Method sheets."
+        "Forward Performance, Exact Combinations and Method sheets."
+    )
     )
