@@ -1979,6 +1979,15 @@ USER QUESTION
 {user_question}
 
 RULES FOR YOUR ANSWER
+RULES FOR YOUR ANSWER
+- Treat all Pandas-calculated summary tables as the authoritative
+  source for numerical answers.
+- For combination forward-return questions, ALWAYS use the
+  COMBINATION-WISE FORWARD RETURN SUMMARY.
+- Do not recalculate combination forward-return averages from
+  the individual qualifying-date rows.
+- If raw individual rows appear to conflict with a calculated
+  summary, use the calculated summary.
 - Answer primarily from the supplied dashboard data.
 - Perform reasonable comparisons or calculations using the
   supplied figures when needed.
@@ -1998,7 +2007,6 @@ RULES FOR YOUR ANSWER
   question.
 - Keep the response focused on the user's question.
 """
-
 
             with st.spinner("Gemini is analyzing the dashboard..."):
 
