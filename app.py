@@ -1743,7 +1743,78 @@ if ask_button:
                 .round(3)
                 .to_string(index=False)
             )
+            # ----------------------------------------------------
+            # YEAR-WISE EXACT COMBINATION ANALYSIS
+            # ----------------------------------------------------
 
+            year_combo_data = forward_48.copy()
+
+            year_combo_data["Year"] = (
+                year_combo_data["Date"].dt.year
+            )
+
+            year_combo_rows = []
+
+            for year in sorted(year_combo_data["Year"].unique()):
+
+                for day_num, full_date_num in [
+                    (4, 4),
+                    (4, 8),
+                    (8, 4),
+                    (8, 8)
+                ]:
+
+                    temp = year_combo_data[
+                        (year_combo_data["Year"] == year)
+                        & (year_combo_data["Day Number"] == day_num)
+                        & (
+                            year_combo_data["Full Date Number"]
+                            == full_date_num
+                        )
+                    ]
+
+                    bullish = temp["Direction"].eq("Bullish").sum()
+                    bearish = temp["Direction"].eq("Bearish").sum()
+                    no_change = temp["Direction"].eq("No Change").sum()
+
+                    total = len(temp)
+                    directional = bullish + bearish
+
+                    bullish_pct = (
+                        bullish / directional * 100
+                        if directional > 0
+                        else np.nan
+                    )
+
+                    if bullish > bearish:
+                        year_result = "Bullish"
+                    elif bearish > bullish:
+                        year_result = "Bearish"
+                    elif directional > 0:
+                        year_result = "Tied"
+                    else:
+                        year_result = "No Data"
+
+                    year_combo_rows.append({
+                        "Year": int(year),
+                        "Combination": f"{day_num} & {full_date_num}",
+                        "Dates": total,
+                        "Bullish": int(bullish),
+                        "Bearish": int(bearish),
+                        "No Change": int(no_change),
+                        "Bullish %": bullish_pct,
+                        "Year Result": year_result
+                    })
+
+            year_combination_summary = pd.DataFrame(
+                year_combo_rows
+            )
+
+            year_combination_context = (
+                year_combination_summary
+                .round(2)
+                .to_string(index=False)
+            )
             forward_context = (
                 forward_summary_app
                 .round(3)
@@ -1808,7 +1879,8 @@ Bearish percentage: {bearish_percentage:.2f}%
 
 EXACT COMBINATION SUMMARY
 {combination_context}
-
+YEAR-WISE EXACT COMBINATION SUMMARY
+{year_combination_context}
 FORWARD PERFORMANCE SUMMARY
 {forward_context}
 
