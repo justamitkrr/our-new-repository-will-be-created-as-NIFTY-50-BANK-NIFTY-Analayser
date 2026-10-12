@@ -2343,3 +2343,24 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
         "The Excel report contains Summary, Qualifying Dates, "
         "Forward Performance, Exact Combinations and Method sheets."
     )
+# ============================================================
+# GEMINI CONNECTION TEST
+# ============================================================
+
+from google import genai
+
+try:
+    gemini_client = genai.Client(
+        api_key=st.secrets["GEMINI_API_KEY"]
+    )
+
+    response = gemini_client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents="Reply only with: Gemini connection successful"
+    )
+
+    st.success(response.text)
+
+except Exception as e:
+    st.error("Gemini connection failed.")
+    st.error(str(e))
