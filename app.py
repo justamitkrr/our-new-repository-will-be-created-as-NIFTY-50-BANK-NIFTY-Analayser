@@ -1682,7 +1682,222 @@ if (
             "observations in the selected period."
         )
 
+# ============================================================
+# GEMINI AI ANALYSIS ASSISTANT
+# ============================================================
 
+st.markdown("### 💬 Ask About This Analysis")
+
+st.caption(
+    "Ask questions about the selected NIFTY 50 / BANK NIFTY "
+    "historical 4/8 analysis."
+)
+
+user_question = st.text_input(
+    "Type your question",
+    placeholder=(
+        "Example: Compare the 4 & 4 and 8 & 8 combinations "
+        "and explain which was stronger historically."
+    )
+)
+
+ask_button = st.button(
+    "Ask Gemini Assistant",
+    use_container_width=True
+)
+
+
+if ask_button:
+
+    if not user_question.strip():
+
+        st.warning("Please type a question first.")
+
+    elif (
+        "forward_48" not in globals()
+        or forward_48.empty
+        or "combination_summary" not in globals()
+        or "forward_summary_app" not in globals()
+    ):
+
+        st.warning(
+            "Dashboard analysis data is not available yet."
+        )
+
+    else:
+
+        try:
+
+            from google import genai
+
+            gemini_client = genai.Client(
+                api_key=st.secrets["GEMINI_API_KEY"]
+            )
+
+            # ----------------------------------------------------
+            # PREPARE COMPACT DASHBOARD DATA FOR GEMINI
+            # ----------------------------------------------------
+
+            combination_context = (
+                combination_summary
+                .round(3)
+                .to_string(index=False)
+            )
+
+            forward_context = (
+                forward_summary_app
+                .round(3)
+                .to_string(index=False)
+            )
+
+            ai_detail_columns = [
+                "Date",
+                "Family",
+                "Day Number",
+                "Full Date Number",
+                "Close",
+                "Direction",
+                "Return +1D %",
+                "Return +2D %",
+                "Return +3D %",
+                "Return +5D %",
+                "Return +10D %"
+            ]
+
+            ai_detail = forward_48[
+                ai_detail_columns
+            ].copy()
+
+            ai_detail["Date"] = (
+                ai_detail["Date"]
+                .dt.strftime("%d %b %Y")
+            )
+
+            detail_context = (
+                ai_detail
+                .round(3)
+                .to_string(index=False)
+            )
+
+            dashboard_context = f"""
+You are the AI analysis assistant inside a historical
+NIFTY 50 and BANK NIFTY analytics dashboard.
+
+CURRENT DASHBOARD SELECTION
+Index: {selected_index}
+History: {selected_history}
+Direction filter: {direction_filter}
+
+LATEST AVAILABLE MARKET DATA
+Latest trading date: {latest_date}
+Latest close: {latest_close:.2f}
+Previous close: {previous_close:.2f}
+Change: {market_change:+.2f}
+Change percentage: {market_change_pct:+.2f}%
+Open: {latest_open:.2f}
+High: {latest_high:.2f}
+Low: {latest_low:.2f}
+
+EXACT 4/8 HISTORICAL SUMMARY
+Total qualifying dates: {total_dates}
+Bullish dates: {bullish_count}
+Bearish dates: {bearish_count}
+No-change dates: {no_change_count}
+Bullish percentage: {bullish_percentage:.2f}%
+Bearish percentage: {bearish_percentage:.2f}%
+
+EXACT COMBINATION SUMMARY
+{combination_context}
+
+FORWARD PERFORMANCE SUMMARY
+{forward_context}
+
+INDIVIDUAL QUALIFYING DATES AND FORWARD RETURNS
+{detail_context}
+
+4/8 RULE
+A trading date qualifies only when BOTH conditions are true:
+1. The calendar day reduces to 4 or 8.
+   4 Family = 4, 13, 22, 31.
+   8 Family = 8, 17, 26.
+2. All digits of DDMMYYYY are added and repeatedly reduced
+   to one digit, and the result is also 4 or 8.
+
+IMPORTANT DEFINITIONS
+Bullish means the qualifying day's close was above the
+previous trading day's close.
+Bearish means it was below the previous trading day's close.
++1D, +2D, +3D, +5D and +10D mean subsequent trading
+sessions, not calendar days.
+"""
+
+            prompt = f"""
+Use the dashboard data below to answer the user's question.
+
+{dashboard_context}
+
+USER QUESTION
+{user_question}
+
+RULES FOR YOUR ANSWER
+- Answer primarily from the supplied dashboard data.
+- Perform reasonable comparisons or calculations using the
+  supplied figures when needed.
+- Do not invent market values or observations.
+- If the requested information cannot be determined from the
+  supplied data, clearly say that it is not available.
+- Treat all 4/8 findings as historical exploratory analysis.
+- Never claim that the 4/8 rule causes or scientifically
+  predicts market movements.
+- Do not provide guaranteed future prices, returns, or trading
+  signals.
+- Clearly distinguish historical observations from forecasts.
+- When comparing results, consider sample size as well as
+  percentages.
+- Explain the answer in clear, simple English.
+- Use percentages and figures where they help answer the
+  question.
+- Keep the response focused on the user's question.
+"""
+
+            with st.spinner("Gemini is analyzing the dashboard..."):
+
+                response = gemini_client.models.generate_content(
+                    model="gemini-3.5-flash",
+                    contents=prompt
+                )
+
+            if response.text:
+
+                st.markdown("#### 🤖 Gemini Answer")
+                st.write(response.text)
+
+            else:
+
+                st.warning(
+                    "Gemini returned an empty response. "
+                    "Please try again."
+                )
+
+        except Exception as error:
+
+            st.error(
+                "Gemini could not answer the question right now."
+            )
+
+            st.caption(
+                "The dashboard itself is still working. "
+                "Please try the AI assistant again shortly."
+            )
+
+            st.code(str(error))
+
+
+st.caption(
+    "Gemini answers are grounded in the historical data currently "
+    "loaded in this dashboard. Historical patterns are not forecasts "
+    "or trading recommendations."
+)
      
 # ============================================================
 # EXCEL REPORT DOWNLOAD
