@@ -1948,6 +1948,10 @@ EXACT COMBINATION SUMMARY
 {combination_context}
 YEAR-WISE EXACT COMBINATION SUMMARY
 {year_combination_context}
+
+COMBINATION-WISE FORWARD RETURN SUMMARY
+{combination_forward_context}
+
 FORWARD PERFORMANCE SUMMARY
 {forward_context}
 
