@@ -1860,11 +1860,41 @@ RULES FOR YOUR ANSWER
 - Keep the response focused on the user's question.
 """
 
-            with st.spinner("Gemini is analyzing the dashboard..."):
+           import time
 
-                response = gemini_client.models.generate_content(
-                    model="gemini-3.5-flash",
-                    contents=prompt
+with st.spinner("Gemini is analyzing the dashboard..."):
+
+    response = None
+    last_error = None
+
+    for attempt in range(3):
+
+        try:
+
+            response = gemini_client.models.generate_content(
+                model="gemini-3.5-flash",
+                contents=prompt
+            )
+
+            break
+
+        except Exception as api_error:
+
+            last_error = api_error
+
+            if (
+                "503" in str(api_error)
+                or "UNAVAILABLE" in str(api_error)
+            ):
+
+                if attempt < 2:
+                    time.sleep(2 ** (attempt + 1))
+                    continue
+
+            raise api_error
+
+    if response is None:
+        raise last_error
                 )
 
             if response.text:
