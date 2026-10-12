@@ -1860,7 +1860,6 @@ RULES FOR YOUR ANSWER
 - Keep the response focused on the user's question.
 """
 
-           import time
 
 with st.spinner("Gemini is analyzing the dashboard..."):
 
