@@ -1815,6 +1815,73 @@ if ask_button:
                 .round(2)
                 .to_string(index=False)
             )
+                        # ----------------------------------------------------
+            # COMBINATION-WISE FORWARD RETURN ANALYSIS
+            # ----------------------------------------------------
+
+            combo_forward_rows = []
+
+            for day_num, full_date_num in [
+                (4, 4),
+                (4, 8),
+                (8, 4),
+                (8, 8)
+            ]:
+
+                temp = forward_48[
+                    (forward_48["Day Number"] == day_num)
+                    & (
+                        forward_48["Full Date Number"]
+                        == full_date_num
+                    )
+                ]
+
+                row = {
+                    "Combination": f"{day_num} & {full_date_num}",
+                    "Dates": len(temp)
+                }
+
+                for days in [1, 2, 3, 5, 10]:
+
+                    return_column = f"Return +{days}D %"
+
+                    returns = (
+                        temp[return_column]
+                        .dropna()
+                        .astype(float)
+                    )
+
+                    row[f"+{days}D Samples"] = len(returns)
+
+                    row[f"+{days}D Avg %"] = (
+                        returns.mean()
+                        if not returns.empty
+                        else np.nan
+                    )
+
+                    row[f"+{days}D Median %"] = (
+                        returns.median()
+                        if not returns.empty
+                        else np.nan
+                    )
+
+                    row[f"+{days}D Positive %"] = (
+                        returns.gt(0).mean() * 100
+                        if not returns.empty
+                        else np.nan
+                    )
+
+                combo_forward_rows.append(row)
+
+            combination_forward_summary = pd.DataFrame(
+                combo_forward_rows
+            )
+
+            combination_forward_context = (
+                combination_forward_summary
+                .round(3)
+                .to_string(index=False)
+            )
             forward_context = (
                 forward_summary_app
                 .round(3)
