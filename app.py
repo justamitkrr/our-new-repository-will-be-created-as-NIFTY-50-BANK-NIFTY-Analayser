@@ -2147,7 +2147,7 @@ Index: {selected_index}
 History: {selected_history}
 Direction filter: {direction_filter}
 Combination filter: {combination_filter}
-Year filter: {year_filter}}
+Year filter: {year_filter}
 
 LATEST AVAILABLE MARKET DATA
 Latest trading date: {latest_date}
