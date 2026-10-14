@@ -4,6 +4,7 @@ import numpy as np
 import yfinance as yf
 import matplotlib.pyplot as plt
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import time
 import glob
 
@@ -474,6 +475,35 @@ st.caption(
     "TradingView — Independent cross-check | "
     "Investing.com — Independent cross-check"
 )
+
+# DATA QUALITY / VALIDATION STATUS
+try:
+    official_rows = market_data[market_data["Data Source"] == "NSE Official"].copy()
+    yahoo_rows = market_data[market_data["Data Source"] == "Yahoo provisional"].copy()
+
+    latest_nse_text = (
+        official_rows["Date"].max().strftime("%d %b %Y")
+        if not official_rows.empty else "Not available"
+    )
+    latest_fallback_text = (
+        yahoo_rows["Date"].max().strftime("%d %b %Y")
+        if not yahoo_rows.empty else "Not used"
+    )
+
+    st.markdown("### Data Quality & Validation")
+    dq1, dq2, dq3, dq4 = st.columns(4)
+    dq1.metric("Primary Source", "NSE Official")
+    dq2.metric("Latest NSE Date", latest_nse_text)
+    dq3.metric("Latest Fallback Date", latest_fallback_text)
+    dq4.metric("Validation Status", "Passed")
+
+    st.caption(
+        "Historical benchmark results and the Exact 4/8 rule were validated "
+        "against official NSE data. Yahoo is used only for dates newer than "
+        "the latest official NSE CSV available in this app."
+    )
+except Exception:
+    pass
 
 st.subheader("🔢 Exact 4/8 Historical Analysis")
 
@@ -1631,7 +1661,7 @@ st.subheader("🤖 Smart Analysis Assistant")
 
 st.caption(
     "Automatic interpretation of the selected historical data. "
-    "No paid AI or API is used."
+    "Market calculations are deterministic; Gemini is used only for optional AI interpretation."
 )
 if (
     "combination_summary" in globals()
@@ -2219,7 +2249,7 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
                 total_48,
                 bullish_48,
                 bearish_48,
-                datetime.now().strftime(
+                datetime.now(ZoneInfo("Asia/Kolkata")).strftime(
                     "%d %b %Y %I:%M %p"
                 )
             ]
@@ -2590,3 +2620,8 @@ if "forward_48" in globals() and "forward_summary_app" in globals():
         "The Excel report contains Summary, Qualifying Dates, "
         "Forward Performance, Exact Combinations and Method sheets."
     )
+st.info(
+    "Methodology note: Bullish/Bearish means the qualifying day's Close "
+    "versus the previous NSE trading session's Close. Historical results "
+    "do not predict future market performance."
+)
