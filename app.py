@@ -5,6 +5,7 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 from datetime import datetime
 import time
+import glob
 
 # ============================================================
 # PAGE SETUP
@@ -228,12 +229,80 @@ selected_history = (
 
 
 # ============================================================
-# DOWNLOAD MARKET DATA
+# NSE OFFICIAL + YAHOO FALLBACK MARKET DATA
 # ============================================================
 
-@st.cache_data(ttl=300)
-def download_market_data(symbol, start_date, end_date):
+def load_official_nse_data(index_name):
+    if index_name == "NIFTY 50":
+        patterns = ["NIFTY 50*.csv", "NIFTY_50*.csv"]
+    else:
+        patterns = ["NIFTY BANK*.csv", "NIFTY_BANK*.csv"]
 
+    files = []
+    for pattern in patterns:
+        files.extend(glob.glob(pattern))
+    files = sorted(set(files))
+
+    frames = []
+
+    for file_path in files:
+        try:
+            df = pd.read_csv(file_path)
+            df.columns = [str(c).strip() for c in df.columns]
+
+            rename_map = {}
+            for col in df.columns:
+                clean = col.strip().lower().replace(" ", "").replace("_", "")
+                if clean in ["date", "indexdate"]:
+                    rename_map[col] = "Date"
+                elif clean in ["open", "openindexvalue"]:
+                    rename_map[col] = "Open"
+                elif clean in ["high", "highindexvalue"]:
+                    rename_map[col] = "High"
+                elif clean in ["low", "lowindexvalue"]:
+                    rename_map[col] = "Low"
+                elif clean in ["close", "closingindexvalue"]:
+                    rename_map[col] = "Close"
+
+            df = df.rename(columns=rename_map)
+            required = ["Date", "Open", "High", "Low", "Close"]
+
+            if not all(col in df.columns for col in required):
+                continue
+
+            df = df[required].copy()
+            df["Date"] = pd.to_datetime(df["Date"], dayfirst=True, errors="coerce")
+
+            for col in ["Open", "High", "Low", "Close"]:
+                df[col] = pd.to_numeric(
+                    df[col].astype(str).str.replace(",", "", regex=False),
+                    errors="coerce"
+                )
+
+            df = df.dropna(subset=["Date", "Close"])
+
+            if not df.empty:
+                df["Data Source"] = "NSE Official"
+                frames.append(df)
+
+        except Exception:
+            continue
+
+    if not frames:
+        return pd.DataFrame(
+            columns=["Date", "Open", "High", "Low", "Close", "Data Source"]
+        )
+
+    return (
+        pd.concat(frames, ignore_index=True)
+        .sort_values("Date")
+        .drop_duplicates(subset=["Date"], keep="last")
+        .reset_index(drop=True)
+    )
+
+
+@st.cache_data(ttl=300)
+def download_yahoo_data(symbol, start_date, end_date):
     download_end = pd.to_datetime(end_date) + pd.Timedelta(days=1)
 
     data = yf.download(
@@ -245,10 +314,66 @@ def download_market_data(symbol, start_date, end_date):
         progress=False
     )
 
+    if data.empty:
+        return pd.DataFrame(
+            columns=["Date", "Open", "High", "Low", "Close", "Data Source"]
+        )
+
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = data.columns.get_level_values(0)
 
+    data = data.reset_index()
+    data["Date"] = pd.to_datetime(data["Date"]).dt.tz_localize(None)
+    data = data[["Date", "Open", "High", "Low", "Close"]].copy()
+    data["Data Source"] = "Yahoo provisional"
     return data
+
+
+@st.cache_data(ttl=300)
+def load_hybrid_market_data(index_name, symbol, start_date, end_date):
+    official = load_official_nse_data(index_name)
+
+    # Load a buffer before From Date so Previous Close is calculated correctly.
+    buffer_start = pd.to_datetime(start_date) - pd.Timedelta(days=31)
+
+    yahoo = download_yahoo_data(
+        symbol,
+        buffer_start.date(),
+        end_date
+    )
+
+    if official.empty:
+        combined = yahoo.copy()
+    else:
+        latest_nse_date = official["Date"].max()
+
+        # NSE remains authoritative. Yahoo contributes only newer dates.
+        yahoo_new = yahoo[yahoo["Date"] > latest_nse_date].copy()
+
+        combined = pd.concat(
+            [official, yahoo_new],
+            ignore_index=True
+        )
+
+    if combined.empty:
+        return combined
+
+    combined["Date"] = pd.to_datetime(combined["Date"]).dt.tz_localize(None)
+
+    combined = (
+        combined
+        .sort_values("Date")
+        .drop_duplicates(subset=["Date"], keep="first")
+        .reset_index(drop=True)
+    )
+
+    range_start = pd.to_datetime(start_date) - pd.Timedelta(days=31)
+    range_end = pd.to_datetime(end_date)
+
+    return combined[
+        (combined["Date"] >= range_start) &
+        (combined["Date"] <= range_end)
+    ].copy()
 
 
 # ============================================================
@@ -256,176 +381,83 @@ def download_market_data(symbol, start_date, end_date):
 # ============================================================
 
 try:
-
-    market_data = download_market_data(
+    market_data = load_hybrid_market_data(
+        selected_index,
         selected_symbol,
         start_date,
         end_date
     )
 
-
     if market_data.empty:
-
         st.error(
-            "No market data received."
+            "No market data received. Check that the official NSE CSV files "
+            "are present in the GitHub repository."
         )
-
 
     else:
+        market_data["Date"] = pd.to_datetime(market_data["Date"])
+        market_data = market_data.sort_values("Date").reset_index(drop=True)
 
-        market_data = (
-            market_data
-            .reset_index()
-        )
+        selected_start_ts = pd.to_datetime(start_date)
+        selected_end_ts = pd.to_datetime(end_date)
 
+        visible_market_data = market_data[
+            (market_data["Date"] >= selected_start_ts) &
+            (market_data["Date"] <= selected_end_ts)
+        ].copy()
 
-        market_data["Date"] = pd.to_datetime(
-            market_data["Date"]
-        )
+        if visible_market_data.empty:
+            st.error("No market data exists inside the selected date range.")
+            st.stop()
 
+        latest_row = visible_market_data.iloc[-1]
+        latest_close = float(latest_row["Close"])
+        latest_open = float(latest_row["Open"])
+        latest_high = float(latest_row["High"])
+        latest_low = float(latest_row["Low"])
 
-        market_data = (
-            market_data
-            .sort_values("Date")
-            .reset_index(drop=True)
-        )
+        latest_position = market_data.index[
+            market_data["Date"] == latest_row["Date"]
+        ]
 
-
-        # ====================================================
-        # BASIC INFORMATION
-        # ====================================================
-
-        latest_row = market_data.iloc[-1]
-
-
-        latest_close = float(
-            latest_row["Close"]
-        )
-
-
-        latest_open = float(
-            latest_row["Open"]
-        )
-
-
-        latest_high = float(
-            latest_row["High"]
-        )
-
-
-        latest_low = float(
-            latest_row["Low"]
-        )
-
-
-        if len(market_data) >= 2:
-
+        if len(latest_position) > 0 and latest_position[-1] > 0:
             previous_close = float(
-                market_data.iloc[-2]["Close"]
+                market_data.iloc[latest_position[-1] - 1]["Close"]
             )
-
         else:
-
             previous_close = np.nan
 
-
         if pd.notna(previous_close):
-
-            market_change = (
-                latest_close
-                -
-                previous_close
-            )
-
-
-            market_change_pct = (
-                market_change
-                /
-                previous_close
-                *
-                100
-            )
-
+            market_change = latest_close - previous_close
+            market_change_pct = market_change / previous_close * 100
         else:
-
             market_change = np.nan
             market_change_pct = np.nan
 
+        latest_date = latest_row["Date"].strftime("%d %b %Y")
+        latest_source = latest_row.get("Data Source", "Unknown")
 
-        latest_date = (
-            market_data.iloc[-1]["Date"]
-            .strftime("%d %b %Y")
+        st.success(f"{selected_index} data loaded successfully.")
+        st.write(f"Latest available trading date: **{latest_date}**")
+        st.caption(
+            f"Latest row source: {latest_source}. Official NSE CSV history "
+            "is primary; Yahoo is used only for dates later than the latest "
+            "official NSE file."
         )
-
-
-        # ====================================================
-        # DISPLAY
-        # ====================================================
-
-        st.success(
-            f"{selected_index} data loaded successfully."
-        )
-
-
-        st.write(
-            f"Latest available trading date: **{latest_date}**"
-        )
-
 
         col1, col2, col3, col4 = st.columns(4)
-
-
-        col1.metric(
-            "Latest Close",
-            f"{latest_close:,.2f}"
-        )
-
-
-        col2.metric(
-            "Previous Close",
-            f"{previous_close:,.2f}"
-        )
-
-
-        col3.metric(
-            "Change",
-            f"{market_change:+,.2f}"
-        )
-
-
-        col4.metric(
-            "Change %",
-            f"{market_change_pct:+.2f}%"
-        )
-
+        col1.metric("Latest Close", f"{latest_close:,.2f}")
+        col2.metric("Previous Close", f"{previous_close:,.2f}")
+        col3.metric("Change", f"{market_change:+,.2f}")
+        col4.metric("Change %", f"{market_change_pct:+.2f}%")
 
         col5, col6, col7 = st.columns(3)
-
-
-        col5.metric(
-            "Open",
-            f"{latest_open:,.2f}"
-        )
-
-
-        col6.metric(
-            "High",
-            f"{latest_high:,.2f}"
-        )
-
-
-        col7.metric(
-            "Low",
-            f"{latest_low:,.2f}"
-        )
-
+        col5.metric("Open", f"{latest_open:,.2f}")
+        col6.metric("High", f"{latest_high:,.2f}")
+        col7.metric("Low", f"{latest_low:,.2f}")
 
 except Exception as error:
-
-    st.error(
-        "Market data could not be loaded."
-    )
-
+    st.error("Market data could not be loaded.")
     st.exception(error)
 
 
@@ -512,6 +544,13 @@ if "market_data" in globals() and not market_data.empty:
         analysis_data["Day Number"]
         .apply(get_family)
     )
+
+    # Calculate Previous Close on the buffered full calendar first,
+    # then restrict the analysis to the user's selected date range.
+    analysis_data = analysis_data[
+        (analysis_data["Date"] >= pd.to_datetime(start_date)) &
+        (analysis_data["Date"] <= pd.to_datetime(end_date))
+    ].copy()
 
 
     # --------------------------------------------------------
