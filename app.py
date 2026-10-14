@@ -777,15 +777,8 @@ if "market_data" in globals() and not market_data.empty:
         ].copy()
 
 
-        # Preferred date format:
-        # 06 Oct 2026
-
-        date_table["Date"] = (
-            date_table["Date"]
-            .dt.strftime("%d %b %Y")
-        )
-
-
+        # Sort using the real datetime value first.
+        # Format only after sorting so dates remain chronological.
         date_table = (
             date_table
             .sort_values(
@@ -793,6 +786,13 @@ if "market_data" in globals() and not market_data.empty:
                 ascending=False
             )
             .reset_index(drop=True)
+        )
+
+        # Preferred display format:
+        # 06 Oct 2026
+        date_table["Date"] = (
+            date_table["Date"]
+            .dt.strftime("%d %b %Y")
         )
 
 
