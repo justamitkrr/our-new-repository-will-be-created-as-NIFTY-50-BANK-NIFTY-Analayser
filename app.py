@@ -2194,8 +2194,7 @@ Bearish means it was below the previous trading day's close.
 +1D, +2D, +3D, +5D and +10D mean subsequent trading
 sessions, not calendar days.
 """
-
-                prompt = f"""
+            prompt = f"""
 You are the analytical assistant inside a NIFTY 50 and BANK NIFTY
 historical market analytics dashboard.
 
