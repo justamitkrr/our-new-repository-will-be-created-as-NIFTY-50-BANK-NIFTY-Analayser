@@ -643,7 +643,13 @@ if "market_data" in globals() and not market_data.empty:
             ["All"] + available_years
         )
 
-    displayed_dates = special_dates.copy()
+        displayed_dates = special_dates.copy()
+
+    displayed_dates["Combination"] = (
+        displayed_dates["Day Number"].astype(str)
+        + " & "
+        + displayed_dates["Full Date Number"].astype(str)
+    )
 
     if direction_filter != "All":
         displayed_dates = displayed_dates[
@@ -659,7 +665,6 @@ if "market_data" in globals() and not market_data.empty:
         displayed_dates = displayed_dates[
             displayed_dates["Date"].dt.year == int(year_filter)
         ].copy()
-
 
     # ========================================================
     # SUMMARY
