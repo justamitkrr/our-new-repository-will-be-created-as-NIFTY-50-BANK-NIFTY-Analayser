@@ -198,28 +198,33 @@ selected_symbol = INDEX_OPTIONS[
 # HISTORY SELECTION
 # ============================================================
 
-history_options = {
-    "1 Month": "1mo",
-    "3 Months": "3mo",
-    "6 Months": "6mo",
-    "1 Year": "1y",
-    "2 Years": "2y",
-    "3 Years": "3y",
-    "5 Years": "5y"
-}
+# ============================================================
+# CUSTOM DATE RANGE
+# ============================================================
 
+st.markdown("### Select Date Range")
 
-selected_history = st.selectbox(
-    "Select History",
-    options=list(history_options.keys()),
-    index=6
-)
+date_col1, date_col2 = st.columns(2)
 
+with date_col1:
+    start_date = st.date_input(
+        "From Date",
+        value=pd.to_datetime("2021-01-01"),
+        min_value=pd.to_datetime("2007-01-01"),
+        max_value=pd.Timestamp.today()
+    )
 
-yahoo_period = history_options[
-    selected_history
-]
+with date_col2:
+    end_date = st.date_input(
+        "To Date",
+        value=pd.Timestamp.today(),
+        min_value=pd.to_datetime("2007-01-01"),
+        max_value=pd.Timestamp.today()
+    )
 
+if start_date > end_date:
+    st.error("From Date cannot be after To Date.")
+    st.stop()
 
 # ============================================================
 # DOWNLOAD MARKET DATA
