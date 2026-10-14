@@ -185,43 +185,47 @@ st.divider()
 
 st.subheader("Market Analysis")
 
-selected_index = st.selectbox(
-    "Select Index",
-    options=list(INDEX_OPTIONS.keys()),
-    index=0
-)
-
-selected_symbol = INDEX_OPTIONS[
-    selected_index
-]
-
-
-# ============================================================
-# CUSTOM DATE RANGE
-# ============================================================
-
-st.markdown("### Select Date Range")
-date_col1, date_col2 = st.columns(2)
-
-with date_col1:
-    start_date = st.date_input(
-        "From Date",
-        value=pd.to_datetime("2021-01-01").date(),
-        min_value=pd.to_datetime("2007-01-01").date(),
-        max_value=pd.Timestamp.today().date()
+with st.form("market_analysis_form"):
+    selected_index = st.selectbox(
+        "Select Index",
+        options=list(INDEX_OPTIONS.keys()),
+        index=0
     )
 
-with date_col2:
-    end_date = st.date_input(
-        "To Date",
-        value=pd.Timestamp.today().date(),
-        min_value=pd.to_datetime("2007-01-01").date(),
-        max_value=pd.Timestamp.today().date()
+    selected_symbol = INDEX_OPTIONS[selected_index]
+
+    st.markdown("### Select Date Range")
+    date_col1, date_col2 = st.columns(2)
+
+    with date_col1:
+        start_date = st.date_input(
+            "From Date",
+            value=pd.to_datetime("2021-01-01").date(),
+            min_value=pd.to_datetime("2007-01-01").date(),
+            max_value=pd.Timestamp.today().date()
+        )
+
+    with date_col2:
+        end_date = st.date_input(
+            "To Date",
+            value=pd.Timestamp.today().date(),
+            min_value=pd.to_datetime("2007-01-01").date(),
+            max_value=pd.Timestamp.today().date()
+        )
+
+    analyze_clicked = st.form_submit_button(
+        "Analyze",
+        type="primary",
+        use_container_width=True
     )
 
 if start_date > end_date:
     st.error("From Date cannot be after To Date.")
     st.stop()
+
+if st.button("Refresh Data", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
 
 selected_history = (
     f"{pd.to_datetime(start_date).strftime('%d %b %Y')} "
@@ -609,36 +613,52 @@ if "market_data" in globals() and not market_data.empty:
 
 
     # --------------------------------------------------------
-    # DIRECTION FILTER
+    # ANALYSIS FILTERS
     # --------------------------------------------------------
 
-    direction_filter = st.selectbox(
-        "Direction Filter",
-        [
-            "All",
-            "Bullish",
-            "Bearish"
-        ]
+    st.markdown("### Analysis Filters")
+
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+
+    with filter_col1:
+        direction_filter = st.selectbox(
+            "Direction",
+            ["All", "Bullish", "Bearish"]
+        )
+
+    with filter_col2:
+        combination_filter = st.selectbox(
+            "Combination",
+            ["All", "4 & 4", "4 & 8", "8 & 4", "8 & 8"]
+        )
+
+    available_years = sorted(
+        special_dates["Date"].dt.year.dropna().unique().astype(int).tolist(),
+        reverse=True
     )
 
+    with filter_col3:
+        year_filter = st.selectbox(
+            "Year",
+            ["All"] + available_years
+        )
 
-    if direction_filter == "Bullish":
+    displayed_dates = special_dates.copy()
 
-        displayed_dates = special_dates[
-            special_dates["Direction"] == "Bullish"
+    if direction_filter != "All":
+        displayed_dates = displayed_dates[
+            displayed_dates["Direction"] == direction_filter
         ].copy()
 
-
-    elif direction_filter == "Bearish":
-
-        displayed_dates = special_dates[
-            special_dates["Direction"] == "Bearish"
+    if combination_filter != "All":
+        displayed_dates = displayed_dates[
+            displayed_dates["Combination"] == combination_filter
         ].copy()
 
-
-    else:
-
-        displayed_dates = special_dates.copy()
+    if year_filter != "All":
+        displayed_dates = displayed_dates[
+            displayed_dates["Date"].dt.year == int(year_filter)
+        ].copy()
 
 
     # ========================================================
