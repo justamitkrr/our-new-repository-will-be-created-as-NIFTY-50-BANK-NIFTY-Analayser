@@ -467,6 +467,14 @@ except Exception as error:
 
 st.divider()
 
+st.markdown("### Data Sources & Verification")
+st.caption(
+    "NSE Official — Primary historical source | "
+    "Yahoo Finance — Fallback for dates newer than the latest official NSE CSV | "
+    "TradingView — Independent cross-check | "
+    "Investing.com — Independent cross-check"
+)
+
 st.subheader("🔢 Exact 4/8 Historical Analysis")
 
 
@@ -772,7 +780,8 @@ if "market_data" in globals() and not market_data.empty:
                 "Close",
                 "Change",
                 "Change %",
-                "Direction"
+                "Direction",
+                "Data Source"
             ]
         ].copy()
 
