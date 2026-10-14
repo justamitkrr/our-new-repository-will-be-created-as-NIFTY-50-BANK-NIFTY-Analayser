@@ -1,159 +1,96 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import yfinance as yf
+import matplotlib.pyplot as plt
+from datetime import datetime
+import time
 
-        combination_excel_rows = []
+# ============================================================
+# PAGE SETUP
+# ============================================================
 
-        for day_num, full_date_num in [
-            (4, 4),
-            (4, 8),
-            (8, 4),
-            (8, 8)
-        ]:
+st.set_page_config(
+    page_title="NIFTY 4/8 Analyzer",
+    page_icon="📊",
+    layout="wide"
+)
 
-            temp = forward_48[
-                (forward_48["Day Number"] == day_num)
-                &
-                (forward_48["Full Date Number"] == full_date_num)
-            ]
 
-            total = len(temp)
+# ============================================================
+# INDEX OPTIONS
+# ============================================================
 
-            bullish = (
-                temp["Direction"]
-                .eq("Bullish")
-                .sum()
-            )
+INDEX_OPTIONS = {
+    "NIFTY 50": "^NSEI",
+    "BANK NIFTY": "^NSEBANK"
+}
 
-            bearish = (
-                temp["Direction"]
-                .eq("Bearish")
-                .sum()
-            )
 
-            directional = bullish + bearish
+# ============================================================
+# EXACT 4/8 DATE LOGIC
+# ============================================================
 
-            if directional > 0:
+def reduce_number(number):
 
-                bullish_pct = (
-                    bullish / directional * 100
-                )
+    while number > 9:
 
-                bearish_pct = (
-                    bearish / directional * 100
-                )
-
-            else:
-
-                bullish_pct = np.nan
-                bearish_pct = np.nan
-
-            combination_excel_rows.append({
-
-                "Combination":
-                    f"{day_num} & {full_date_num}",
-
-                "Qualifying Dates":
-                    total,
-
-                "Bullish":
-                    bullish,
-
-                "Bearish":
-                    bearish,
-
-                "Bullish %":
-                    bullish_pct,
-
-                "Bearish %":
-                    bearish_pct
-
-            })
-
-        combination_excel = pd.DataFrame(
-            combination_excel_rows
+        number = sum(
+            int(x)
+            for x in str(number)
         )
 
-        # ----------------------------------------------------
-        # INFORMATION SHEET
-        # ----------------------------------------------------
-
-        information_excel = pd.DataFrame({
-
-            "Topic": [
-
-                "4 Family",
-
-                "8 Family",
-
-                "Full Date Rule",
-
-                "Qualification Rule",
-
-                "Bullish",
-
-                "Bearish",
-
-                "Forward Returns",
-
-                "Important"
-
-            ],
-
-            "Explanation": [
-
-                "Calendar days 4, 13, 22 and 31 reduce to 4.",
-
-                "Calendar days 8, 17 and 26 reduce to 8.",
-
-                (
-                    "All digits of DDMMYYYY are added and "
-                    "reduced repeatedly to one digit."
-                ),
-
-                (
-                    "A trading date qualifies only when "
-                    "Day Number is 4 or 8 AND Full Date "
-                    "Number is 4 or 8."
-                ),
-
-                (
-                    "Close is above the previous "
-                    "trading day's close."
-                ),
-
-                (
-                    "Close is below the previous "
-                    "trading day's close."
-                ),
-
-                (
-                    "+1D, +2D, +3D, +5D and +10D refer "
-                    "to future trading sessions, not "
-                    "calendar days."
-                ),
-
-                (
-                    "This is historical exploratory "
-                    "analysis and is not a prediction "
-                    "or trading signal."
-                )
-
-            ]
-
-        })
+    return number
 
 
-        # ====================================================
-        # WRITE EXCEL
-        # ====================================================
+def get_day_number(date):
 
-        with pd.ExcelWriter(
-            output,
-            engine="openpyxl"
-        ) as writer:
+    return reduce_number(
+        date.day
+    )
 
 
-            summary_excel.to_excel(
-                writer,
-                sheet_name="Summary",
-                index=False
-            )
+def get_full_date_number(date):
 
+    date_digits = (
+        f"{date.day:02d}"
+        f"{date.month:02d}"
+        f"{date.year}"
+    )
+
+    total = sum(
+        int(x)
+        for x in date_digits
+    )
+
+    return reduce_number(
+        total
+    )
+
+
+def get_family(day_number):
+
+    if day_number == 4:
+
+        return "4 Family"
+
+    elif day_number == 8:
+
+        return "8 Family"
+
+    return "Other"
+
+
+def is_48_date(date):
+
+    day_number = get_day_number(
+        date
+    )
+
+    full_date_number = (
+        get_full_date_number(
+            date
+        )
+    )
+
+    return (
