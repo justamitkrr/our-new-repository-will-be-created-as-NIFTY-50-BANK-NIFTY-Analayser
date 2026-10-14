@@ -1244,7 +1244,120 @@ if "analysis_data" in globals() and "special_dates" in globals():
         chart_data
     )
 
+    # ========================================================
+    # VISUAL ANALYTICS
+    # ========================================================
 
+    st.markdown("## 📊 Visual Analytics")
+
+    visual_data = displayed_dates.copy()
+
+    total_visual = len(visual_data)
+    bullish_visual = int(
+        (visual_data["Direction"] == "Bullish").sum()
+    )
+    bearish_visual = int(
+        (visual_data["Direction"] == "Bearish").sum()
+    )
+
+    bullish_visual_pct = (
+        bullish_visual / total_visual * 100
+        if total_visual else 0
+    )
+
+    bearish_visual_pct = (
+        bearish_visual / total_visual * 100
+        if total_visual else 0
+    )
+
+    # KPI CARDS
+    vk1, vk2, vk3 = st.columns(3)
+
+    vk1.metric(
+        "Filtered Exact 4/8 Dates",
+        total_visual
+    )
+
+    vk2.metric(
+        "Bullish",
+        bullish_visual,
+        f"{bullish_visual_pct:.2f}%"
+    )
+
+    vk3.metric(
+        "Bearish",
+        bearish_visual,
+        f"{bearish_visual_pct:.2f}%"
+    )
+
+    if not visual_data.empty:
+
+        # --------------------------------------------
+        # COMBINATION PERFORMANCE
+        # --------------------------------------------
+
+        combination_chart = (
+            visual_data
+            .groupby(["Combination", "Direction"])
+            .size()
+            .unstack(fill_value=0)
+            .reindex(
+                ["4 & 4", "4 & 8", "8 & 4", "8 & 8"]
+            )
+            .fillna(0)
+        )
+
+        for direction_name in ["Bullish", "Bearish"]:
+            if direction_name not in combination_chart.columns:
+                combination_chart[direction_name] = 0
+
+        st.markdown("### Combination Performance")
+
+        st.bar_chart(
+            combination_chart[
+                ["Bullish", "Bearish"]
+            ]
+        )
+
+        # --------------------------------------------
+        # YEAR-WISE PERFORMANCE
+        # --------------------------------------------
+
+        yearly_chart = (
+            visual_data
+            .assign(
+                Year=visual_data["Date"].dt.year
+            )
+            .groupby(["Year", "Direction"])
+            .size()
+            .unstack(fill_value=0)
+            .sort_index()
+        )
+
+        for direction_name in ["Bullish", "Bearish"]:
+            if direction_name not in yearly_chart.columns:
+                yearly_chart[direction_name] = 0
+
+        st.markdown(
+            "### Year-wise Bullish vs Bearish"
+        )
+
+        st.line_chart(
+            yearly_chart[
+                ["Bullish", "Bearish"]
+            ]
+        )
+
+        st.caption(
+            "Charts use the selected Direction, Combination "
+            "and Year filters. Historical observations only."
+        )
+
+    else:
+
+        st.info(
+            "No Exact 4/8 records match the selected filters."
+        )
     # ========================================================
     # INDIVIDUAL QUALIFYING DATES
     # ========================================================
