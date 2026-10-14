@@ -80,17 +80,14 @@ def get_family(day_number):
 
     return "Other"
 
-
 def is_48_date(date):
 
-    day_number = get_day_number(
-        date
-    )
+    day_number = get_day_number(date)
 
-    full_date_number = (
-        get_full_date_number(
-            date
-        )
-    )
+    full_date_number = get_full_date_number(date)
 
     return (
+        day_number in [4, 8]
+        and
+        full_date_number in [4, 8]
+    )
