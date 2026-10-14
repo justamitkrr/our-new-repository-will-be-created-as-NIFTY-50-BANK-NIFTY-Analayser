@@ -1251,6 +1251,11 @@ if "analysis_data" in globals() and "special_dates" in globals():
     st.markdown("## 📊 Visual Analytics")
 
     visual_data = displayed_dates.copy()
+    visual_data["Combination"] = (
+        visual_data["Day Number"].astype(str)
+        + " & "
+        + visual_data["Full Date Number"].astype(str)
+    )
 
     total_visual = len(visual_data)
     bullish_visual = int(
