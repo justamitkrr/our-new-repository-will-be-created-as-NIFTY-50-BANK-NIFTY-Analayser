@@ -2303,7 +2303,7 @@ RESPONSE STYLE
 - Use a small table when comparing several years or combinations.
 - Clearly label historical observations as historical.
 """
-                with st.spinner("AI is analyzing the dashboard..."):
+            with st.spinner("AI is analyzing the dashboard..."):
 
                 ai_answer = None
                 ai_provider = None
