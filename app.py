@@ -1955,7 +1955,10 @@ if ask_button:
             gemini_client = genai.Client(
                 api_key=st.secrets["GEMINI_API_KEY"]
             )
-
+hf_client = InferenceClient(
+    provider="auto",
+    api_key=st.secrets["HF_TOKEN"]
+)
             # ----------------------------------------------------
             # PREPARE COMPACT DASHBOARD DATA FOR GEMINI
             # ----------------------------------------------------
