@@ -2372,7 +2372,7 @@ RESPONSE STYLE
                     f"Answered by: {ai_provider}"
                 )
 
-                        else:
+            else:
 
                 st.error(
                     "AI assistant is temporarily unavailable."
