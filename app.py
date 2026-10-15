@@ -853,15 +853,28 @@ if "market_data" in globals() and not market_data.empty:
             .reset_index(drop=True)
         )
 
-        # Preferred display format:
-        # 06 Oct 2026
-        date_table["Date"] = (
-            date_table["Date"]
-            .dt.strftime("%d %b %Y")
+        # Add TradingView verification link
+if selected_index == "NIFTY 50":
+    date_table["Verify"] = "https://www.tradingview.com/chart/?symbol=NSE%3ANIFTY"
+else:
+    date_table["Verify"] = "https://www.tradingview.com/chart/?symbol=NSE%3ABANKNIFTY"
+
+st.dataframe(
+    date_table.style.format({
+        "Previous Close": "{:,.2f}",
+        "Close": "{:,.2f}",
+        "Change": "{:+,.2f}",
+        "Change %": "{:+.2f}%"
+    }),
+    column_config={
+        "Verify": st.column_config.LinkColumn(
+            "TradingView",
+            display_text="Open Chart"
         )
-
-
-        st.dataframe(
+    },
+    use_container_width=True,
+    hide_index=True
+)
             date_table.style.format({
 
                 "Previous Close":
