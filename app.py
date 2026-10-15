@@ -2315,7 +2315,7 @@ RESPONSE STYLE
                     try:
 
                         response = gemini_client.models.generate_content(
-                            model="invalid-test-model",
+                            model="gemini-3.8-flash",
                             contents=prompt
                         )
 
