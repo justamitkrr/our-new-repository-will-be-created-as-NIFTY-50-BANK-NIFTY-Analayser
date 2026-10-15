@@ -875,8 +875,23 @@ st.dataframe(
     use_container_width=True,
     hide_index=True
 )
+        date_table.style.format({
+        st.dataframe(
             date_table.style.format({
-
+                "Previous Close": "{:,.2f}",
+                "Close": "{:,.2f}",
+                "Change": "{:+,.2f}",
+                "Change %": "{:+.2f}%"
+            }),
+            column_config={
+                "Verify": st.column_config.LinkColumn(
+                    "TradingView",
+                    display_text="Open Chart"
+                )
+            },
+            use_container_width=True,
+            hide_index=True
+        )
                 "Previous Close":
                     "{:,.2f}",
 
