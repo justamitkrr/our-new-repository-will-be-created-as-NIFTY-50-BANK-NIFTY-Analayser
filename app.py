@@ -1924,7 +1924,7 @@ user_question = st.text_input(
 )
 
 ask_button = st.button(
-    "Ask Gemini Assistant",
+    "Ask AI Assistant",
     use_container_width=True
 )
 
