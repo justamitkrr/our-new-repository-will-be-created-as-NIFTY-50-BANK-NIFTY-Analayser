@@ -2297,11 +2297,13 @@ RESPONSE STYLE
 - Use a small table when comparing several years or combinations.
 - Clearly label historical observations as historical.
 """
-            with st.spinner("Gemini is analyzing the dashboard..."):
+                        with st.spinner("AI is analyzing the dashboard..."):
 
-                response = None
+                ai_answer = None
+                ai_provider = None
                 last_error = None
 
+                # PRIMARY AI: GEMINI
                 for attempt in range(3):
 
                     try:
@@ -2311,7 +2313,10 @@ RESPONSE STYLE
                             contents=prompt
                         )
 
-                        break
+                        if response.text:
+                            ai_answer = response.text
+                            ai_provider = "Gemini"
+                            break
 
                     except Exception as api_error:
 
@@ -2326,36 +2331,54 @@ RESPONSE STYLE
                                 time.sleep(2 ** (attempt + 1))
                                 continue
 
-                        raise api_error
+                        break
 
-                if response is None:
-                    raise last_error
+                # BACKUP AI: HUGGING FACE
+                if ai_answer is None:
 
-            if response.text:
+                    try:
 
-                st.markdown("#### 🤖 Gemini Answer")
-                st.write(response.text)
+                        hf_response = hf_client.chat.completions.create(
+                            model="google/gemma-2-2b-it",
+                            messages=[
+                                {
+                                    "role": "user",
+                                    "content": prompt
+                                }
+                            ],
+                            max_tokens=1000
+                        )
+
+                        ai_answer = hf_response.choices[0].message.content
+                        ai_provider = "Backup AI"
+
+                    except Exception as hf_error:
+
+                        last_error = hf_error
+
+            # DISPLAY THE ANSWER
+            if ai_answer:
+
+                st.markdown("#### 🤖 AI Market Assistant")
+                st.write(ai_answer)
+
+                st.caption(
+                    f"Answered by: {ai_provider}"
+                )
 
             else:
 
-                st.warning(
-                    "Gemini returned an empty response. "
-                    "Please try again."
+                st.error(
+                    "AI assistant is temporarily unavailable."
                 )
 
-        except Exception as error:
+                st.caption(
+                    "The dashboard calculations are still working normally. "
+                    "Please try the AI assistant again shortly."
+                )
 
-            st.error(
-                "Gemini could not answer the question right now."
-            )
-
-            st.caption(
-                "The dashboard itself is still working. "
-                "Please try the AI assistant again shortly."
-            )
-
-            st.code(str(error))
-
+                if last_error:
+                    st.code(str(last_error))
 
 st.caption(
     "Gemini answers are grounded in the historical data currently "
