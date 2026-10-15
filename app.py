@@ -7,6 +7,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import time
 import glob
+from huggingface_hub import InferenceClient
 
 # ============================================================
 # PAGE SETUP
