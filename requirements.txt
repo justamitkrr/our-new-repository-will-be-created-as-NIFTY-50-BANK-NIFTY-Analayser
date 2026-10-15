@@ -5,3 +5,4 @@ yfinance
 matplotlib
 openpyxl
 google-genai
+huggingface_hub
