@@ -2372,7 +2372,7 @@ RESPONSE STYLE
                     f"Answered by: {ai_provider}"
                 )
 
-            else:
+                        else:
 
                 st.error(
                     "AI assistant is temporarily unavailable."
@@ -2386,8 +2386,22 @@ RESPONSE STYLE
                 if last_error:
                     st.code(str(last_error))
 
+        except Exception as error:
+
+            st.error(
+                "AI assistant is temporarily unavailable."
+            )
+
+            st.caption(
+                "The dashboard calculations are still working normally. "
+                "Please try the AI assistant again shortly."
+            )
+
+            st.code(str(error))
+
+
 st.caption(
-    "Gemini answers are grounded in the historical data currently "
+    "AI answers are grounded in the historical data currently "
     "loaded in this dashboard. Historical patterns are not forecasts "
     "or trading recommendations."
 )
