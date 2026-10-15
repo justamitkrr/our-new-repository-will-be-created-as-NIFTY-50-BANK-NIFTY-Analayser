@@ -812,17 +812,17 @@ if "market_data" in globals() and not market_data.empty:
     # QUALIFYING DATE TABLE
     # ========================================================
 
-    st.markdown(
-        "### Qualifying Dates"
-    )
+        # ========================================================
+    # QUALIFYING DATE TABLE
+    # ========================================================
 
+    st.markdown("### Qualifying Dates")
 
     if displayed_dates.empty:
 
         st.warning(
             "No qualifying 4/8 dates found for this selection."
         )
-
 
     else:
 
@@ -841,9 +841,7 @@ if "market_data" in globals() and not market_data.empty:
             ]
         ].copy()
 
-
-        # Sort using the real datetime value first.
-        # Format only after sorting so dates remain chronological.
+        # Sort newest dates first
         date_table = (
             date_table
             .sort_values(
@@ -853,22 +851,24 @@ if "market_data" in globals() and not market_data.empty:
             .reset_index(drop=True)
         )
 
-        # Add TradingView verification link
-        # Format date for display
-        date_table["Date"] = (
+        # Save readable date before converting Date into a link
+        date_table["Date Text"] = (
             date_table["Date"]
             .dt.strftime("%d %b %Y")
         )
 
-        # Add TradingView verification link
+        # TradingView chart for selected index
         if selected_index == "NIFTY 50":
-            date_table["Verify"] = (
+            tradingview_url = (
                 "https://www.tradingview.com/chart/?symbol=NSE%3ANIFTY"
             )
         else:
-            date_table["Verify"] = (
+            tradingview_url = (
                 "https://www.tradingview.com/chart/?symbol=NSE%3ABANKNIFTY"
             )
+
+        # Date column becomes clickable URL
+        date_table["Date"] = tradingview_url
 
         st.dataframe(
             date_table.style.format({
@@ -878,11 +878,27 @@ if "market_data" in globals() and not market_data.empty:
                 "Change %": "{:+.2f}%"
             }),
             column_config={
-                "Verify": st.column_config.LinkColumn(
+                "Date": st.column_config.LinkColumn(
                     "TradingView",
                     display_text="Open Chart"
+                ),
+                "Date Text": st.column_config.TextColumn(
+                    "Date"
                 )
             },
+            column_order=[
+                "Date Text",
+                "Date",
+                "Family",
+                "Day Number",
+                "Full Date Number",
+                "Previous Close",
+                "Close",
+                "Change",
+                "Change %",
+                "Direction",
+                "Data Source"
+            ],
             use_container_width=True,
             hide_index=True
         )
